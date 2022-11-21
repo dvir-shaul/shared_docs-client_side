@@ -1,12 +1,11 @@
 import React from "react";
-
 const Menu = () => {
   return (
     <div className="menu">
       <div
         className="menu-folder"
         style={{
-          backgroundImage: `linear-gradient(to right, #396ee3, #3f7afe, #396ee3)`,
+          backgroundImage: `linear-gradient(to right, #396EE3, #3F7AFE, #396EE3)`,
         }}
       >
         <div className="personal-div">
@@ -32,9 +31,8 @@ const Menu = () => {
           <p className="folder">Programming</p>
         </div>
       </div>
-      <div className="menu-document"></div>
+      {/* <div className="menu-document"></div> */}
     </div>
   );
 };
-
 export default Menu;
