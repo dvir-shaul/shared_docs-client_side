@@ -1,0 +1,164 @@
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+*{
+  margin: 0;
+}
+
+body {
+  font-size: 16px;
+  background-color: #edeef2;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  margin: 0;
+}
+
+.container{
+  background-color: #fdfdfd;
+  padding: 20px;
+}
+
+.container .ql-editor {
+  width: 15in;
+  height: 90vh;
+  font-size: 16px;
+  padding: 0.5in;
+  /* box-shadow: 0 0 7px 0 rgba(0, 0, 0, .7); */
+  background-color: #fdfdfd;
+}
+
+.container .ql-container.ql-snow {
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  border: none;
+}
+
+.container .ql-toolbar.ql-snow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
+  display: block;
+  border: 0.5px solid rgba(0, 0, 0, 0.085);
+  border-radius: 10px;
+  height: 50px;
+  width: 475px;
+}
+
+.folderContainer{
+  padding: 20px;
+}
+
+.editorFolder{
+  box-shadow: 0 0 10px 0 rgba(0, 0, 0, .3);
+  display: flex;
+  border-radius: 15px;
+  height: 95vh;
+  overflow: hidden;
+}
+
+.menu{
+  display: flex;
+}
+
+.menu-folder{
+  width: 250px;
+  background-color: #3f7afe;
+  color: rgba(255, 255, 255, 0.499);
+  padding: 20px 0px;
+}
+
+.menu-document{
+  width: 250px;
+  background-color: #f6f7fb;
+  color: rgba(255, 255, 255, 0.499);
+  padding: 20px 0px;
+}
+
+.personal-div{
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-weight: 500;
+  flex-direction: column;
+}
+
+.search{
+  padding: 10px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.search > input{
+  padding: 10px 15px;
+  border-radius: 5px;
+  outline: none;
+  border: none;
+}
+
+.name-div{
+  text-align: center;
+  padding: 5px 20px;
+  color: #96b7fd;
+}
+
+.img-div{
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.img-div > img{
+  height: 100%;
+  object-fit: fill;
+}
+
+.folders-div{
+  margin: 40px 0px;
+}
+
+.folder{
+  padding: 10px;
+  text-align: center;
+  font-weight: 200;
+  width: 100%;
+}
+.folder:hover{
+  background-color: #2b63dc;
+  color: white;
+}
+
+@page {
+  margin: 1in;
+}
+
+@media print {
+  body {
+    background: none;
+  }
+
+  .container .ql-editor {
+    width: 6.5in;
+    height: 9in;
+    padding: 0;
+    margin: 0;
+    box-shadow: none;
+    align-self: flex-start;
+  }
+
+  .container .ql-toolbar.ql-snow {
+    display: none;
+  }
+}
+
+/* @media(max-width:1200px) {
+  .personal-div {
+    flex-direction: column;
+  }
+} */
+
