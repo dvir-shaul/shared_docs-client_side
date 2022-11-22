@@ -39,24 +39,27 @@ export default function TextEditor() {
     quill.enable();
     quill.setText(""); // bring all content from the specific document
     stompClient.subscribe("/document", onContentReceived);
-    // userJoin();
+    stompClient.subscribe("/document/getContent", onLoadContentReceived);
+    stompClient.send(
+      "/app/document/getContent",
+      {},
+      JSON.stringify({ documentId: 4 })
+    );
+  };
+  const onLoadContentReceived = (payload) => {
+    // const payloadData = JSON.parse(payload?.body);
+    console.log("payload: ", payload.body);
+    quill.setText(payload.body);
   };
   const onContentReceived = (payload) => {
     const payloadData = JSON.parse(payload?.body);
-    console.log(quill.getText());
     quill.enable();
-    console.log(
-      localStorage.getItem("id"),
-      payloadData.userId,
-      localStorage.getItem("id") == payloadData.userId
-    );
     if (localStorage.getItem("id") == payloadData.userId) return;
     if (payloadData.action.toLowerCase() === "delete") {
       quill.deleteText(payloadData.offset, parseInt(payloadData.data));
     } else if (payloadData.action.toLowerCase() === "insert") {
       quill.insertText(payloadData.offset, payloadData.data);
     }
-    // quill.removeText(payloadData.offset, payloadData.data);
     // switch(payloadData.status){
     //     case "JOIN":
     //         if(!privateChats.get(payloadData.senderName)){
@@ -127,8 +130,6 @@ export default function TextEditor() {
       if (!stompClient || source !== "user") return;
       const textChange = createRequest(delta);
       stompClient.send("/app/document", {}, JSON.stringify(textChange));
-      // setUserData({ ...userData, message: "" });
-      // socket.emit("send-changes", delta);
     };
     quill.on("text-change", textChangeHandler);
     return () => {
