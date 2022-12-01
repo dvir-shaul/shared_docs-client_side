@@ -1,143 +1,248 @@
 import { useCallback, useEffect, useState } from "react";
 import Quill from "quill";
 import "quill/dist/quill.snow.css";
-import { useParams } from "react-router-dom";
 import { over } from "stompjs";
 import SockJS from "sockjs-client";
+import { useGetTokenFromLocalStorage } from "./customHooks/useGetTokenFromLocalStorage";
+
 let stompClient;
 let quill;
-const SAVE_INTERVAL_MS = 2000;
+let userId;
+
 const TOOLBAR_OPTIONS = [
-  [{ header: [1, 2, 3, 4, 5, 6, false] }],
-  [{ font: [] }],
+  // [{ header: [1, 2, 3, 4, 5, 6, false] }],
+  // [{ font: [] }],
   // [{ list: "ordered" }, { list: "bullet" }],
-  ["bold", "italic", "underline"],
-  [{ color: [] }, { background: [] }],
+  // ["bold", "italic", "underline"],
+  // [{ color: [] }, { background: [] }],
   // [{ script: "sub" }, { script: "super" }],
-  [{ align: [] }],
+  // [{ align: [] }],
   // ["image", "blockquote", "code-block"],
   // ["clean"],
 ];
-export default function TextEditor() {
-  const { id: documentId } = useParams();
-  const [content, setContent] = useState("");
-  const [socket, setSocket] = useState();
+
+export default function TextEditor({
+  activeDocument,
+  setOnlineUsers,
+  setAdmin,
+}) {
+  const [user, setUser] = useState();
+  const token = useGetTokenFromLocalStorage();
+
   useEffect(() => {
     connect();
     return () => {
+      // first, leave the doc
+      stompClient.send(
+        "/app/document/onlineUsers/" + activeDocument.id,
+        {},
+        JSON.stringify({
+          userId,
+          method: "REMOVE",
+        })
+      );
       stompClient.disconnect();
     };
-  }, []);
+  }, [activeDocument]);
+
   const connect = () => {
-    let Sock = new SockJS("http://localhost:8080/ws");
+    let Sock = new SockJS("http://localhost:8081/ws");
     stompClient = over(Sock);
+    stompClient.debug = null;
     stompClient.connect({}, onConnected, (error) => {
       console.log("THIS DIDN'T WORK!" + error);
     });
+
+    // create fetch api call to update online field on user per document
   };
-  const onConnected = () => {
-    quill.enable();
-    quill.setText(""); // bring all content from the specific document
-    stompClient.subscribe("/document", onContentReceived);
-    stompClient.subscribe("/document/getContent", onLoadContentReceived);
-    stompClient.send(
-      "/app/document/getContent",
-      {},
-      JSON.stringify({ documentId: 4 })
+
+  const subscribeFunctions = () => {
+    const documentId = activeDocument.id;
+    // get all logs from other users
+    stompClient.subscribe(`/document/${documentId}`, onContentReceived);
+    // get all users + online users from the server
+    stompClient.subscribe(
+      `/document/onlineUsers/${documentId}`,
+      onActiveUsersChange
     );
   };
-  const onLoadContentReceived = (payload) => {
-    // const payloadData = JSON.parse(payload?.body);
-    console.log("payload: ", payload.body);
-    quill.setText(payload.body);
+
+  const getUser = async () => {
+    let myHeaders = new Headers();
+    myHeaders.append("Authorization", "Bearer " + token);
+
+    let requestOptions = {
+      method: "POST",
+      headers: myHeaders,
+      redirect: "follow",
+    };
+
+    const url =
+      "http://localhost:8081/file/document/getUser?documentId=" +
+      activeDocument.id;
+
+    return await fetch(url, requestOptions)
+      .then((response) => response.json())
+      .then((user) => {
+        setUser(user);
+        setAdmin(user);
+        userId = user.userId;
+        return user;
+      })
+      .catch((error) => console.log("error", error));
   };
+
+  const getContent = async () => {
+    let myHeaders = new Headers();
+    myHeaders.append("Authorization", "Bearer " + token);
+
+    let requestOptions = {
+      method: "GET",
+      headers: myHeaders,
+      redirect: "follow",
+    };
+
+    const url =
+      "http://localhost:8081/file/document/getContent?documentId=" +
+      activeDocument.id;
+
+    await fetch(url, requestOptions)
+      .then((response) => response.text())
+      .then((content) => {
+        quill.setText(content);
+      })
+      .catch((error) => console.log("error", error));
+  };
+
+  const userPermissionsInDocument = async (connectedUser) => {
+    if (!connectedUser?.permission) return;
+    if (
+      connectedUser?.permission === "VIEWER" ||
+      connectedUser?.permission === "UNAUTORIZED"
+    )
+      quill.disable();
+    else quill.enable();
+
+    if (connectedUser?.permission === "UNAUTORIZED") {
+      if (
+        !document.querySelector(".textContainer").classList.contains("blur")
+      ) {
+        console.log(connectedUser, "is not an authorized user");
+        document.querySelector(".textContainer").classList.add("blur");
+      }
+    } else {
+      document.querySelector(".textContainer").classList.remove("blur");
+    }
+  };
+
+  const startRelationWithDocument = async () => {
+    // get the user id and permission -> user object
+    const connectedUser = await getUser();
+    // get the content
+    await getContent();
+    // if the user is not allowed to edit text (viewer), quill.disabled().
+    await userPermissionsInDocument(connectedUser);
+    // else quill.enabled()
+    return connectedUser;
+  };
+
+  const joinDocument = (connectedUser) => {
+    // tell everyone that I have entered the document and add me to the online users list
+    stompClient.send(
+      "/app/document/onlineUsers/" + activeDocument.id,
+      {},
+      JSON.stringify({
+        userId: connectedUser?.userId || userId,
+        method: "ADD",
+      })
+    );
+  };
+
+  const onConnected = async () => {
+    // get all necessary content -> join to doc + current content
+    const connectedUser = await startRelationWithDocument();
+
+    // listen to changes via subscribes -> log changes + online users changes
+    subscribeFunctions();
+
+    // tell everyone that i have joined the document
+    joinDocument(connectedUser);
+  };
+
+  const onActiveUsersChange = async (payload) => {
+    const usersObject = JSON.parse(payload.body);
+    const usersList = {};
+
+    usersObject.allUsers.forEach((user) => {
+      usersList[user.email] = user;
+      usersList[user.email]["status"] = "offline";
+    });
+
+    usersObject.onlineUsers.forEach((user) => {
+      if (usersList[user]) usersList[user]["status"] = "online";
+    });
+    setOnlineUsers(usersList);
+  };
+
   const onContentReceived = (payload) => {
     const payloadData = JSON.parse(payload?.body);
-    quill.enable();
-    if (localStorage.getItem("id") == payloadData.userId) return;
+    console.log(payloadData);
+    if (userId === payloadData.userId) return;
+
     if (payloadData.action.toLowerCase() === "delete") {
       quill.deleteText(payloadData.offset, parseInt(payloadData.data));
     } else if (payloadData.action.toLowerCase() === "insert") {
       quill.insertText(payloadData.offset, payloadData.data);
     }
-    // switch(payloadData.status){
-    //     case "JOIN":
-    //         if(!privateChats.get(payloadData.senderName)){
-    //             privateChats.set(payloadData.senderName,[]);
-    //             setPrivateChats(new Map(privateChats));
-    //         }
-    //         break;
-    //     case "MESSAGE":
-    //         publicChats.push(payloadData);
-    //         setPublicChats([...publicChats]);
-    //         break;
-    // }
   };
+
   const createRequest = (delta) => {
-    let textChange = {
-      userId: parseInt(localStorage.getItem("id")),
-      documentId: 4,
+    let log = {
+      userId: user.userId,
+      documentId: activeDocument.id,
     };
+
     if (!delta.ops[1]) {
-      textChange.offset = 0;
-      textChange.data = Object.values(delta?.ops?.[0])[0];
+      log.offset = 0;
+      log.data = Object.values(delta?.ops?.[0])[0];
       if (delta.ops[0].insert) {
-        textChange.action = "insert";
+        log.action = "insert";
       } else if (delta.ops[0].delete) {
-        textChange.action = "delete";
+        log.action = "delete";
       }
     } else {
-      textChange.offset = delta?.ops?.[0]?.retain;
-      textChange.data = Object.values(delta?.ops?.[1])[0];
+      log.offset = delta?.ops?.[0]?.retain;
+      log.data = Object.values(delta?.ops?.[1])[0];
       if (delta.ops[1].insert) {
-        textChange.action = "insert";
+        log.action = "insert";
       } else if (delta.ops[1].delete) {
-        textChange.action = "delete";
+        log.action = "delete";
       }
     }
-    return textChange;
+    return log;
   };
-  // useEffect(() => {
-  //   if (socket == null || quill == null) return;
-  //   socket.once("load-document", (document) => {
-  //     quill.setContents(document);
-  //     quill.enable();
-  //   });
-  //   // socket.emit("get-document", documentId);
-  // }, [socket, quill, documentId]);
-  // useEffect(() => {
-  //   if (socket == null || quill == null) return;
-  //   const interval = setInterval(() => {
-  //     socket.emit("save-document", quill.getContents());
-  //   }, SAVE_INTERVAL_MS);
-  //   return () => {
-  //     clearInterval(interval);
-  //   };
-  // }, [socket, quill]);
-  // useEffect(() => {
-  //   if (socket == null || quill == null) return;
-  //   const handler = (delta) => {
-  //     quill.updateContents(delta);
-  //   };
-  //   socket.on("receive-changes", handler);
-  //   return () => {
-  //     socket.off("receive-changes", handler);
-  //   };
-  // }, [socket, quill]);
+
   useEffect(() => {
     if (quill == null) return;
     const textChangeHandler = (delta, oldDelta, source) => {
       if (!stompClient || source !== "user") return;
-      const textChange = createRequest(delta);
-      stompClient.send("/app/document", {}, JSON.stringify(textChange));
+      const log = createRequest(delta);
+      stompClient.send(
+        "/app/document/" + activeDocument.id,
+        {},
+        JSON.stringify(log)
+      );
     };
     quill.on("text-change", textChangeHandler);
+
     return () => {
       quill.off("text-change", textChangeHandler);
     };
-  }, [stompClient, quill]);
+  });
+
   const wrapperRef = useCallback((wrapper) => {
     if (wrapper == null) return;
+
     wrapper.innerHTML = "";
     const editor = document.createElement("div");
     wrapper.append(editor);
@@ -148,12 +253,6 @@ export default function TextEditor() {
     quill.disable();
     quill.setText("Loading...");
   }, []);
+
   return <div className="container" ref={wrapperRef}></div>;
 }
-
-
-
-
-
-
-

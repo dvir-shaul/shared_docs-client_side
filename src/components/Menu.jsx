@@ -1,38 +1,61 @@
-import React from "react";
-const Menu = () => {
+import FolderContent from "./FolderContent";
+import MainFolders from "./MainFolders";
+import PersonalInfo from "./PersonalInfo";
+import { useGetTokenFromLocalStorage } from "../customHooks/useGetTokenFromLocalStorage.js";
+import { Redirect, useHistory } from "react-router-dom";
+import { useState } from "react";
+// import { useParams } from "react-router-dom";
+
+const Menu = ({
+  activeMainFolder,
+  setActiveMainFolder,
+  activeDocument,
+  setActiveDocument,
+  setPath,
+  path,
+}) => {
+  // bring params from url
+  // if shared -> setactivefolder to shared documents folder
+  // setactivedocument to the id of the params
+  useGetTokenFromLocalStorage();
+  const history = useHistory();
+
+  const logout = () => {
+    console.log("logging out!");
+    localStorage.removeItem("token");
+    history.push("/login");
+  };
+
   return (
-    <div className="menu">
+    <div className={`menu ${activeDocument != null && "active"}`}>
       <div
-        className="menu-folder"
+        className={`menu-folder ${activeMainFolder != null && "active"}`}
         style={{
-          backgroundImage: `linear-gradient(to right, #396EE3, #3F7AFE, #396EE3)`,
+          backgroundImage: `linear-gradient(to right, #396ee3, #3f7afe, #396ee3)`,
         }}
       >
-        <div className="personal-div">
-          <div className="img-div">
-            <img
-              src="https://i.insider.com/5dcc135ce94e86714253af21?width=1000&format=jpeg&auto=webp"
-              alt="personal-img"
-            />
-          </div>
-          <div className="name-div">
-            <p>Robert Downey Jr.</p>
-          </div>
-        </div>
-        <div className="search">
-          <input placeholder="Search folders..." />
-        </div>
-        <div className="folders-div">
-          <p className="folder">Business</p>
-          <p className="folder">Design</p>
-          <p className="folder">General</p>
-          <p className="folder">Journal</p>
-          <p className="folder">Personal</p>
-          <p className="folder">Programming</p>
+        <PersonalInfo />
+
+        <MainFolders
+          setPath={setPath}
+          activeMainFolder={activeMainFolder}
+          setActiveMainFolder={setActiveMainFolder}
+        />
+        <div className="log-out-div" onClick={logout}>
+          <button className="log-out">Sign out</button>
         </div>
       </div>
-      {/* <div className="menu-document"></div> */}
+      {activeMainFolder && activeMainFolder !== "" && (
+        <FolderContent
+          activeDocument={activeDocument}
+          path={path}
+          setPath={setPath}
+          activeMainFolder={activeMainFolder}
+          setActiveDocument={setActiveDocument}
+        />
+      )}
     </div>
   );
 };
+
 export default Menu;
