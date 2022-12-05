@@ -22,7 +22,7 @@ body {
   width: 100%;
 }
 .textContainer.blur {
-  filter: blur(4px);
+  filter: blur(6px);
   pointer-events: none;
   user-select: none;
 }
@@ -100,15 +100,37 @@ body {
   white-space: nowrap;
 }
 
+.remove-user-permission {
+  background-color: rgba(0, 0, 0, 0.631);
+  box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  padding: 1px;
+  color: white;
+  font-size: 12px;
+  display: grid;
+  place-items: center;
+  font-weight: 200;
+  cursor: pointer;
+}
+.remove-user-permission:hover {
+  transition: all 0.25s ease-in-out;
+  background-color: rgba(0, 0, 0, 0.9);
+}
+
 .users-list {
   display: flex;
   flex-direction: column;
-  width: 100%;
-  max-height: 150px;
+  width: 95%;
+  max-height: 180px;
   overflow-y: auto;
+  min-height: 120px;
+  justify-content: start;
+  align-items: center;
 }
 .user-in-list {
-  height: 70%;
+  width: 95%;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -127,13 +149,15 @@ body {
   border-radius: 7px;
   background-color: transparent;
   border: none;
+  text-align: center;
 }
 .modal {
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.4);
   position: relative;
-  padding: 20px;
+  padding: 15px;
   height: 200px;
-  width: 500px;
+  max-width: 600px;
+  width: 80%;
   background-color: rgba(239, 239, 239, 0.906);
   border-radius: 20px;
   display: flex;
@@ -233,7 +257,14 @@ body {
   text-align: center;
   padding: 5px 20px;
   min-height: 50px;
-  color: #96b7fd;
+  font-weight: 200;
+  color: #b2c5ec;
+}
+.name-div p:nth-child(1) {
+  font-weight: 600;
+}
+.name-div p:nth-child(2) {
+  font-size: 14px;
 }
 
 .img-div {
@@ -431,6 +462,7 @@ body {
   opacity: 0.7;
   z-index: 0;
   min-width: 350px;
+  max-width: 520px;
   user-select: none;
 }
 
@@ -559,7 +591,6 @@ body {
   justify-content: space-between;
   align-items: center;
   padding: 5px 5px;
-  cursor: pointer;
 }
 .file:hover {
   background-color: rgba(128, 128, 128, 0.1);
@@ -569,7 +600,7 @@ body {
 }
 
 .file-name-paragraph {
-  width: 80%;
+  cursor: pointer;
   text-align: start;
 }
 .file-name-paragraph.active {
@@ -694,6 +725,7 @@ hr {
   gap: 5px;
 }
 .edits-div img {
+  cursor: pointer;
   height: 15px;
 }
 

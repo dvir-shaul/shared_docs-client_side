@@ -26,9 +26,14 @@ export const Login = ({ email, setEmail }) => {
     };
 
     fetch("http://localhost:8081/user/auth/login", requestOptions)
-      .then((response) => response.text())
-      .then((response) => {
-        const token = response.replace("token:", "").trim();
+      .then((response) => response.json())
+      .then((result) => {
+        console.log(result);
+        if (result.statusCode === 400) {
+          alert(result.message);
+          return;
+        }
+        const token = result.data.replace("token:", "").trim();
         if (!token.includes("approve")) {
           localStorage.setItem("token", token);
           history.push("/document");

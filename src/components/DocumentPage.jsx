@@ -5,6 +5,7 @@ import TextEditor from "../TextEditor";
 import downloadImg from "../downloadImg.png";
 import { useParams } from "react-router-dom";
 import Modal from "../general-components/Modal";
+import { useGetTokenFromLocalStorage } from "../customHooks/useGetTokenFromLocalStorage";
 
 const DocumentPage = ({
   activeMainFolder,
@@ -15,18 +16,18 @@ const DocumentPage = ({
   const [onlineUsers, setOnlineUsers] = useState([]);
   const [assignedUsersToDocument, setAssignedUsersToDocument] = useState([]);
   const { documentId, userId } = useParams();
+  const [rerenderUsers, setRerenderUsers] = useState(false);
   const [path, setPath] = useState([]);
-  const [admin, setAdmin] = useState();
+  const token = useGetTokenFromLocalStorage();
 
   useEffect(() => {
-    console.log(documentId, userId);
     if (documentId) {
       setPath({ id: -1 });
       setActiveMainFolder({
         id: -1,
         type: "FOLDER",
       });
-      setActiveDocument({ id: documentId.split("=")[1] });
+      getDocument(documentId.split("=")[1]);
     }
   }, [documentId, userId]);
 
@@ -46,12 +47,45 @@ const DocumentPage = ({
     else modal.classList.add("active");
   };
 
+  const getDocument = () => {
+    if (documentId == null) return;
+    // get document from database!
+    let myHeaders = new Headers();
+    myHeaders.append("Authorization", "Bearer " + token);
+
+    let requestOptions = {
+      method: "GET",
+      headers: myHeaders,
+      redirect: "follow",
+    };
+
+    fetch(
+      "http://localhost:8081/file/document?documentId=" +
+        documentId.split("=")[1],
+      requestOptions
+    )
+      .then((response) => response.json())
+      .then((result) => {
+        console.log(
+          "Looking for a document info because I used a copy link",
+          result
+        );
+        if (result.statusCode !== 200) {
+          alert(result.message);
+          return;
+        }
+        setActiveDocument(result.data);
+      })
+      .catch((error) => console.log("error", error));
+  };
+
   return (
     <div className="folderContainer">
       <Modal
         activeDocument={activeDocument}
         toggleModal={toggleModal}
         onlineUsers={onlineUsers}
+        setOnlineUsers={setOnlineUsers}
       />
       <div className="editorContainer">
         <Menu
@@ -72,6 +106,9 @@ const DocumentPage = ({
                   onlineUsers={onlineUsers}
                   setAssignedUsersToDocument={setAssignedUsersToDocument}
                   assignedUsersToDocument={assignedUsersToDocument}
+                  setRerenderUsers={setRerenderUsers}
+                  rerenderUsers={rerenderUsers}
+                  setOnlineUsers={setOnlineUsers}
                 />
                 <div className="download-div" onClick={exportFile}>
                   <img
@@ -83,11 +120,11 @@ const DocumentPage = ({
                 </div>
               </div>
               <div className="doc-title-name">
-                <h2>{activeDocument.name}</h2>
+                <h2>{activeDocument.name || "This is a temp title"}</h2>
               </div>
             </div>
             <TextEditor
-              setAdmin={setAdmin}
+              rerenderUsers={rerenderUsers}
               activeDocument={activeDocument}
               setOnlineUsers={setOnlineUsers}
             />

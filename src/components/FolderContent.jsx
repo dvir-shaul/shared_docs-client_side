@@ -19,12 +19,16 @@ const FolderContent = ({
   const token = useGetTokenFromLocalStorage();
 
   useEffect(() => {
-    if (!activeMainFolder) return;
-    // fetchContent(activeMainFolder?.id);
+    if (!activeMainFolder) {
+      setActiveDocument(null);
+      setPath([]);
+      return;
+    }
     fetchFolderContent(activeMainFolder);
   }, [activeMainFolder]);
 
   const fetchFolderContent = (item) => {
+    console.log("Clicked item:", item);
     setSelectedFile(item.id);
     if (item.type === "FOLDER") fetchContent(item.id);
     else if (item.type === "DOCUMENT") setActiveDocument(item);
@@ -46,8 +50,12 @@ const FolderContent = ({
     fetch("http://localhost:8081/user/sharedDocuments", requestOptions)
       .then((response) => response.json())
       .then((result) => {
-        console.log(result);
-        setFiles(result);
+        console.log("Shared documents content: ", result);
+        if (result.statusCode !== 200) {
+          alert(result.message);
+          return;
+        }
+        setFiles(result.data);
       })
       .catch((error) => console.log("error", error));
   };
@@ -67,7 +75,12 @@ const FolderContent = ({
     )
       .then((response) => response.json())
       .then((result) => {
-        setFiles(result);
+        console.log("Get all content in folder result:", result);
+        if (result.statusCode !== 200) {
+          alert(result.message + "\nPlease try to refresh the page!");
+          return;
+        }
+        setFiles(result.data);
       })
       .catch((error) => console.log("error", error));
   };
@@ -85,11 +98,18 @@ const FolderContent = ({
       },
       redirect: "follow",
     };
-    const url = `http://localhost:8081/file/getPath?type=${item.type}&fileId=${item.id}`;
+    const url = `http://localhost:8081/file/${item.type.toLowerCase()}/getPath?type=${
+      item.type
+    }&${item.type.toLowerCase()}Id=${item.id}`;
     fetch(url, requestOptions)
       .then((response) => response.json())
       .then((result) => {
-        setPath(result);
+        console.log("Getting path", result);
+        if (result.statusCode !== 200) {
+          alert(result.message);
+          return;
+        }
+        setPath(result.data);
         scrollRef.current?.scrollIntoView({
           behavior: "smooth",
           block: "nearest",
@@ -106,15 +126,9 @@ const FolderContent = ({
     var myHeaders = new Headers();
     myHeaders.append("Authorization", "Bearer " + token);
 
-    // var raw = JSON.stringify({
-    //   name,
-    //   parentFolderId: path[path.length - 1].id,
-    // });
-
     var requestOptions = {
       method: "POST",
       headers: myHeaders,
-      // body: raw,
       redirect: "follow",
     };
     const url = `http://localhost:8081/file/${type}?parentFolderId=${
@@ -122,8 +136,15 @@ const FolderContent = ({
     }&name=${name}`;
 
     fetch(url, requestOptions)
-      .then((response) => response.text())
-      .then((result) => fetchContent(path[path.length - 1].id))
+      .then((response) => response.json())
+      .then((result) => {
+        console.log("Creating new file:", result);
+        if (result.statusCode !== 200) {
+          alert(result.message + "\n Please try to refresh the page!");
+          return;
+        }
+        fetchContent(path[path.length - 1].id);
+      })
       .catch((error) => console.log("error", error));
   };
 
@@ -158,8 +179,15 @@ const FolderContent = ({
     }&name=${name}`;
 
     fetch(url, requestOptions)
-      .then((response) => response.text())
-      .then((result) => fetchContent(path[path.length - 1].id))
+      .then((response) => response.json())
+      .then((result) => {
+        console.log(result);
+        if (result.statusCode !== 200) {
+          alert(result.message);
+          return;
+        }
+        fetchContent(path[path.length - 1].id);
+      })
       .catch((error) => console.log("error", error));
   };
 

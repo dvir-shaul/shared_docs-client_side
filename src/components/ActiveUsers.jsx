@@ -10,8 +10,6 @@ const ActiveUsers = ({
   onlineUsers,
   setOnlineUsers,
   activeDocument,
-  assignedUsersToDocument,
-  setAssignedUsersToDocument,
   toggleModal,
 }) => {
   const token = useGetTokenFromLocalStorage();
@@ -46,10 +44,19 @@ const ActiveUsers = ({
     )
       .then((response) => response.json())
       .then((result) => {
-        setAssignedUsersToDocument(result);
+        console.log("New result of online users:", result);
+        if (result.statusCode !== 200) {
+          alert(result.message);
+          return;
+        }
+        setOnlineUsers(result.data);
       })
       .catch((error) => console.log("error", error));
   };
+
+  useEffect(() => {
+    console.log("online users are now: ", onlineUsers);
+  }, [onlineUsers]);
 
   return (
     <div className="online-users">

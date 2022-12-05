@@ -17,8 +17,12 @@ const Activation = () => {
         "http://localhost:8081/user/auth/activate?token=" + token,
         requestOptions
       )
-        .then((response) => response.text())
+        .then((response) => response.json())
         .then((result) => {
+          console.log(result);
+          if (result.statusCode === 400) {
+            alert(result.message);
+          }
           history.push("/login");
         })
         .catch((error) => console.log("error", error));

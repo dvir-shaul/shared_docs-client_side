@@ -14,9 +14,6 @@ const Menu = ({
   setPath,
   path,
 }) => {
-  // bring params from url
-  // if shared -> setactivefolder to shared documents folder
-  // setactivedocument to the id of the params
   useGetTokenFromLocalStorage();
   const history = useHistory();
 
