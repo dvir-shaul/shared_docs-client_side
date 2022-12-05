@@ -59,29 +59,26 @@ const ItemRow = ({
       }`,
       requestOptions
     )
-      .then((response) => response.text())
+      .then((response) => response.json())
       .then((result) => {
-        if (file.id === activeDocument.id) setActiveDocument(null);
+        console.log("Delete item", result);
+        if (file.id === activeDocument?.id) setActiveDocument(null);
+        console.log("fetching content for:", path[path.length - 1].id);
         fetchContent(path[path.length - 1].id);
       })
       .catch((error) => console.log("error", error));
   };
 
   const renameFile = (file, newName) => {
+    console.log("Selected file for rename is:", file);
     alert("Name has been changed to -> " + newName);
     let myHeaders = new Headers();
     myHeaders.append("Authorization", "Bearer " + token);
     myHeaders.append("Content-Type", "application/json");
 
-    // let raw = JSON.stringify({
-    //   id: file.id,
-    //   name: newName,
-    // });
-
     let requestOptions = {
       method: "PATCH",
       headers: myHeaders,
-      // body: raw,
       redirect: "follow",
     };
 
@@ -91,17 +88,20 @@ const ItemRow = ({
       }&name=${newName}`,
       requestOptions
     )
-      .then((response) => response.text())
+      .then((response) => response.json())
       .then((result) => {
+        console.log("Change name result:", result);
+        if (result.statusCode !== 200) {
+          alert(result.message);
+          return;
+        }
         const tempDoc = { ...activeDocument };
         tempDoc.name = newName;
-        setActiveDocument(tempDoc);
+        // setActiveDocument(tempDoc);
         fetchContent(path[path.length - 1].id);
       })
       .catch((error) => console.log("error", error));
   };
-
-  console.log(item);
 
   return (
     <div

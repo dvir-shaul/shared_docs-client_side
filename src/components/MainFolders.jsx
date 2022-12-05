@@ -32,7 +32,14 @@ const MainFolders = ({ activeMainFolder, setActiveMainFolder, setPath }) => {
     fetch(`http://localhost:8081/file/getAll?parentFolderId=`, requestOptions)
       .then((response) => response.json())
       .then((result) => {
-        setFolders(result);
+        console.log(result);
+        if (result.statusCode === 200) {
+          setFolders(result.data);
+        } else {
+          alert(
+            "Something went wrong.\nTrying refreshing the page in order to fetch your main folders!"
+          );
+        }
       })
       .catch((error) => console.log("error", error));
   }, [token]);

@@ -24,7 +24,7 @@ const TOOLBAR_OPTIONS = [
 export default function TextEditor({
   activeDocument,
   setOnlineUsers,
-  setAdmin,
+  rerenderUsers,
 }) {
   const [user, setUser] = useState();
   const token = useGetTokenFromLocalStorage();
@@ -32,7 +32,9 @@ export default function TextEditor({
   useEffect(() => {
     connect();
     return () => {
+      console.log(">>>>>>>> Disconnecting!!!!");
       // first, leave the doc
+      // if (stompClient.status !== "CONNECTED") return;
       stompClient.send(
         "/app/document/onlineUsers/" + activeDocument.id,
         {},
@@ -72,22 +74,24 @@ export default function TextEditor({
     myHeaders.append("Authorization", "Bearer " + token);
 
     let requestOptions = {
-      method: "POST",
+      method: "GET",
       headers: myHeaders,
       redirect: "follow",
     };
 
     const url =
-      "http://localhost:8081/file/document/getUser?documentId=" +
+      "http://localhost:8081/user/document/getUser?documentId=" +
       activeDocument.id;
+
+    console.log(url);
 
     return await fetch(url, requestOptions)
       .then((response) => response.json())
-      .then((user) => {
-        setUser(user);
-        setAdmin(user);
-        userId = user.userId;
-        return user;
+      .then((result) => {
+        console.log("The current user who watches the document:", result);
+        setUser(result.data);
+        userId = result.data.userId;
+        return result.data;
       })
       .catch((error) => console.log("error", error));
   };
@@ -107,9 +111,10 @@ export default function TextEditor({
       activeDocument.id;
 
     await fetch(url, requestOptions)
-      .then((response) => response.text())
-      .then((content) => {
-        quill.setText(content);
+      .then((response) => response.json())
+      .then((result) => {
+        console.log("Document's content is:", result);
+        quill.setText(result.data);
       })
       .catch((error) => console.log("error", error));
   };
@@ -118,16 +123,15 @@ export default function TextEditor({
     if (!connectedUser?.permission) return;
     if (
       connectedUser?.permission === "VIEWER" ||
-      connectedUser?.permission === "UNAUTORIZED"
+      connectedUser?.permission === "UNAUTHORIZED"
     )
       quill.disable();
     else quill.enable();
 
-    if (connectedUser?.permission === "UNAUTORIZED") {
+    if (connectedUser?.permission === "UNAUTHORIZED") {
       if (
         !document.querySelector(".textContainer").classList.contains("blur")
       ) {
-        console.log(connectedUser, "is not an authorized user");
         document.querySelector(".textContainer").classList.add("blur");
       }
     } else {
@@ -147,6 +151,7 @@ export default function TextEditor({
   };
 
   const joinDocument = (connectedUser) => {
+    console.log(connectedUser, userId);
     // tell everyone that I have entered the document and add me to the online users list
     stompClient.send(
       "/app/document/onlineUsers/" + activeDocument.id,
@@ -157,6 +162,12 @@ export default function TextEditor({
       })
     );
   };
+
+  useEffect(() => {
+    if (stompClient.status !== "CONNECTED") return;
+    console.log("re-fetching all users");
+    joinDocument(userId);
+  }, [rerenderUsers]);
 
   const onConnected = async () => {
     // get all necessary content -> join to doc + current content
@@ -171,22 +182,12 @@ export default function TextEditor({
 
   const onActiveUsersChange = async (payload) => {
     const usersObject = JSON.parse(payload.body);
-    const usersList = {};
-
-    usersObject.allUsers.forEach((user) => {
-      usersList[user.email] = user;
-      usersList[user.email]["status"] = "offline";
-    });
-
-    usersObject.onlineUsers.forEach((user) => {
-      if (usersList[user]) usersList[user]["status"] = "online";
-    });
-    setOnlineUsers(usersList);
+    console.log("Got new list of active users:", usersObject);
+    setOnlineUsers(usersObject);
   };
 
   const onContentReceived = (payload) => {
     const payloadData = JSON.parse(payload?.body);
-    console.log(payloadData);
     if (userId === payloadData.userId) return;
 
     if (payloadData.action.toLowerCase() === "delete") {
@@ -240,16 +241,39 @@ export default function TextEditor({
     };
   });
 
+  // useEffect(() => {
+  //   if (quill == null) return;
+  //   const userTextSelection = (range) => {
+  //     if (range) {
+  //       console.log(range);
+  //     }
+  //     //   if (!stompClient || source !== "user") return;
+  //     //   const log = createRequest(delta);
+  //     //   stompClient.send(
+  //     //     "/app/document/" + activeDocument.id,
+  //     //     {},
+  //     //     JSON.stringify(log)
+  //     //   );
+  //   };
+  //   quill.on("selection-change", userTextSelection);
+
+  //   return () => {
+  //     quill.off("selection-change-change", userTextSelection);
+  //   };
+  // });
+
   const wrapperRef = useCallback((wrapper) => {
     if (wrapper == null) return;
 
     wrapper.innerHTML = "";
     const editor = document.createElement("div");
     wrapper.append(editor);
+
     quill = new Quill(editor, {
       theme: "snow",
       modules: { toolbar: TOOLBAR_OPTIONS },
     });
+
     quill.disable();
     quill.setText("Loading...");
   }, []);

@@ -1,7 +1,6 @@
 import React, { useRef } from "react";
 import { ReactComponent as Laptop } from "../man-use-laptop.svg";
 import { useHistory } from "react-router-dom";
-import { useGetTokenFromLocalStorage } from "../customHooks/useGetTokenFromLocalStorage.js";
 
 export const Register = ({ email, setEmail }) => {
   const history = useHistory();
@@ -17,7 +16,15 @@ export const Register = ({ email, setEmail }) => {
 
   const register = (e) => {
     e.preventDefault();
-    e.preventDefault();
+
+    if (passwordRef.current.value !== confirmPasswordRef.current.value) {
+      alert("Make sure both password fields are the same");
+      return;
+    }
+    if (!/\S+@\S+\.\S+/.test(emailRef.current.value)) {
+      alert("Make sure the email is valid");
+      return;
+    }
 
     var requestOptions = {
       method: "POST",
@@ -32,12 +39,17 @@ export const Register = ({ email, setEmail }) => {
     };
 
     fetch("http://localhost:8081/user/auth/register", requestOptions)
-      .then((response) => response.text())
-      .then((response) => console.log(response))
+      .then((response) => response.json())
+      .then((result) => {
+        console.log(result);
+        if (result.statsCode !== 201) {
+          alert(result.message);
+          return;
+        }
+        redirectToLogin();
+      })
       .catch((error) => console.log(error));
   };
-
-  useGetTokenFromLocalStorage();
 
   return (
     <div
@@ -68,6 +80,7 @@ export const Register = ({ email, setEmail }) => {
               ref={emailRef}
               required
               placeholder="Email"
+              type="email"
               defaultValue={email}
             />
             <input

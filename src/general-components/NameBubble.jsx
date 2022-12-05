@@ -11,8 +11,8 @@ export const NameBubble = ({ user, activeDocument, index, toggleModal }) => {
   useEffect(() => {
     fetch(`https://fakeface.rest/face/json?minimum_age=${randomInt()}`)
       .then((response) => response.json())
-      .then((response) => {
-        setUserPicture(response);
+      .then((result) => {
+        setUserPicture(result);
       });
   }, [activeDocument]);
 
@@ -40,7 +40,7 @@ export const NameBubble = ({ user, activeDocument, index, toggleModal }) => {
       />
       <div
         onClick={handleModalOpen}
-        className={`bubble-wrapper ${user.status === "online" && "online"}`}
+        className={`bubble-wrapper ${user.status === "ONLINE" && "online"}`}
         style={{ transform: `translateX(-${index * 10}px)` }}
       >
         <div

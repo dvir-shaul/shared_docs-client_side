@@ -1,5 +1,10 @@
-import { BrowserRouter as Router, Switch, Route } from "react-router-dom";
-import { useEffect, useState } from "react";
+import {
+  BrowserRouter as Router,
+  Switch,
+  Route,
+  Redirect,
+} from "react-router-dom";
+import { useState } from "react";
 import { Login } from "./components/Login";
 import { Register } from "./components/Register";
 import DocumentPage from "./components/DocumentPage";
@@ -10,7 +15,7 @@ function App() {
   const [activeMainFolder, setActiveMainFolder] = useState();
   const [activeDocument, setActiveDocument] = useState();
   const [email, setEmail] = useState("");
-  const token = useState(useGetTokenFromLocalStorage());
+  const token = useGetTokenFromLocalStorage();
 
   return (
     <Router>
@@ -48,13 +53,13 @@ function App() {
             setActiveDocument={setActiveDocument}
           />
         </Route>
-        {/* <Route path="/">
-          {token !== null && token.length > 0 ? (
+        <Route path="/">
+          {token !== null && token.length > 120 ? (
             <Redirect to={`/document`} />
           ) : (
-            <Redirect to={"/login"} />
+            <Redirect to={"/register"} />
           )}
-        </Route> */}
+        </Route>
       </Switch>
     </Router>
   );
